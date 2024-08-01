@@ -1,3 +1,64 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
 local Window = OrionLib:MakeWindow({Name = "Katanga Hub | Anime Strike Simulator |", introText = "KatangaHub", SaveConfig = true, ConfigFolder = "Test"})
+
+_G.FarmSelected = true
+_G.AutoClick = true
+
+getgenv().TPPlace = "string"
+
+local FarmTab = Window:MakeTab({
+	Name = "Farm",
+	Icon = "rbxassetid://4483345998",
+})
+
+function autoClick()
+    while _G.AutoClick == true do 
+        local args = {
+            [1] = "Attack",
+            [2] = "Click"
+        }
+        game:GetService("ReplicatedStorage").Bridge:FireServer(unpack(args))
+        wait(.000000000000000000000000000000000000000000000000001)        
+    end
+end
+
+function Teleport(teleportPlace)
+    local player = game.Players.LocalPlayer
+    player.Character.HumanoidRootPart.CFrame = teleportPlace
+end
+
+FarmTab:AddDropdown({
+	Name = "Select Mob",
+	Default = "...",
+	Options = {"Geere", "kaka", "Lii", "Sakuze", "Sackur", "Nabuto", "Minto"},
+	Callback = function(Value)
+		print(Value)
+	end    
+})
+
+FarmTab:AddToggle({
+	Name = "Farm Selected",
+	Callback = function()
+        if getgenv().TPPlace == ""
+})
+
+FarmTab:AddToggle({
+	Name = "AutoClick",
+	Default = false,
+	Callback = function(Value)
+		_G.AutoClick = Value
+        autoClick()
+	end    
+})
+
+FarmTab:AddToggle({
+	Name = "Collect Drops",
+	Default = false,
+	Callback = function(Value)
+		print(Value)
+	end    
+})
+
+end
+OrionLib.init()
