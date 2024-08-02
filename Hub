@@ -1,64 +1,172 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-
-local Window = OrionLib:MakeWindow({Name = "Katanga Hub | Anime Strike Simulator |", introText = "KatangaHub", SaveConfig = true, ConfigFolder = "Test"})
-
-_G.FarmSelected = true
-_G.AutoClick = true
-
-getgenv().TPPlace = "string"
-
-local FarmTab = Window:MakeTab({
-	Name = "Farm",
-	Icon = "rbxassetid://4483345998",
+local Window = OrionLib:MakeWindow({
+    Name = "Katanga Hub | Anime Strike Simulator |", 
+    IntroText = "KatangaHub", 
+    SaveConfig = true, 
+    ConfigFolder = "Test"
 })
 
+-- Variables globales
+_G.autoclick = false
+_G.selectedMob = nil
+_G.farmSelectedMob = false
+
+-- Mapa de nombres a listas de CFrames
+local mobCFrameMap = {
+    ["Geere"] = {
+        CFrame.new(191.765274, 241.461899, -1977.33313, -0.766061664, 0, -0.642767608, 0, 1, 0, 0.642767608, 0, -0.766061664),
+        CFrame.new(200.0, 250.0, -2100.0, 0.8, 0, 0.6, 0, 1, 0, -0.6, 0, 0.8)
+    },
+    ["kaka"] = {
+        CFrame.new(159.913177, 242.076553, -2275.59204, -0.995742679, 3.98282191e-06, -0.0921799764, -3.98282191e-06, 1, 8.62300949e-05, 0.0921799764, 8.62300949e-05, -0.995742679)
+    },
+    ["Lii"] = {
+        CFrame.new(-2.78387451, 241.424698, -1902.91455, 0.984812498, 0, 0.173621148, 0, 1, 0, -0.173621148, 0, 0.984812498)
+    },
+    -- Agrega más mobs aquí
+}
+
+-- CFrame de Gaara para teletransportarse
+local gaaraCFrames = {
+    CFrame.new(210.0, 250.0, -2200.0, 0.9, 0, 0.4, 0, 1, 0, -0.4, 0, 0.9)  -- Reemplaza con los CFrames reales de Gaara
+}
+
+-- Variables de estado
+local currentMobCFrames = {}
+
+-- Función para realizar autoclick
 function autoClick()
-    while _G.AutoClick == true do 
+    while _G.autoclick do
         local args = {
             [1] = "Attack",
             [2] = "Click"
         }
         game:GetService("ReplicatedStorage").Bridge:FireServer(unpack(args))
-        wait(.000000000000000000000000000000000000000000000000001)        
+        wait(0.1) -- Controla la velocidad de clic
     end
 end
 
-function Teleport(teleportPlace)
+-- Función para teletransportar al jugador a una lista de CFrames específicos
+function teleportToMobs(mobCFrames)
     local player = game.Players.LocalPlayer
-    player.Character.HumanoidRootPart.CFrame = teleportPlace
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local playerHRP = player.Character.HumanoidRootPart
+
+        for _, mobCFrame in ipairs(mobCFrames) do
+            -- Teletransportar al jugador al CFrame del mob
+            local success, errorMsg = pcall(function()
+                playerHRP.CFrame = mobCFrame
+            end)
+            if not success then
+                print("Error during teleport: " .. errorMsg)
+            end
+            wait(1) -- Tiempo entre teletransportes
+        end
+    else
+        print("Player or HumanoidRootPart is not available")
+    end
 end
 
-FarmTab:AddDropdown({
-	Name = "Select Mob",
-	Default = "...",
-	Options = {"Geere", "kaka", "Lii", "Sakuze", "Sackur", "Nabuto", "Minto"},
-	Callback = function(Value)
-		print(Value)
-	end    
-})
-
-FarmTab:AddToggle({
-	Name = "Farm Selected",
-	Callback = function()
-        if getgenv().TPPlace == ""
-})
-
-FarmTab:AddToggle({
-	Name = "AutoClick",
-	Default = false,
-	Callback = function(Value)
-		_G.AutoClick = Value
-        autoClick()
-	end    
-})
-
-FarmTab:AddToggle({
-	Name = "Collect Drops",
-	Default = false,
-	Callback = function(Value)
-		print(Value)
-	end    
-})
-
+-- Función para comprobar si un mob está vivo
+function isMobAlive(mobName)
+    local mob = game.Workspace:FindFirstChild(mobName)
+    if mob and mob:FindFirstChild("Humanoid") then
+        return mob.Humanoid.Health > 0
+    end
+    return false
 end
-OrionLib.init()
+
+-- Función para teletransportar y atacar a los mobs seleccionados basados en el CFrame
+function teleportAndAttackMobs()
+    while _G.farmSelectedMob and _G.selectedMob do
+        local mobCFrames = mobCFrameMap[_G.selectedMob]
+        if not mobCFrames then
+            print("No CFrames found for selected mob: " .. _G.selectedMob)
+            wait(2)
+            continue
+        end
+
+        -- Teletransportar al jugador a los CFrames de los mobs
+        teleportToMobs(mobCFrames)
+
+        -- Enviar comando de ataque
+        local attackArgs = {
+            [1] = "AttackMob",
+            [2] = _G.selectedMob
+        }
+        local attackSuccess, attackErrorMsg = pcall(function()
+            game:GetService("ReplicatedStorage").Bridge:FireServer(unpack(attackArgs))
+        end)
+        if not attackSuccess then
+            print("Error during attack: " .. attackErrorMsg)
+        end
+
+        -- Comprobar si Geere ha muerto y teletransportar a Gaara si está vivo
+        if not isMobAlive("Geere") then
+            for _, gaaraCFrame in ipairs(gaaraCFrames) do
+                -- Teletransportar al jugador a los CFrames de Gaara
+                teleportToMobs({gaaraCFrame})
+                break -- Solo teletransportar una vez a Gaara
+            end
+        end
+
+        wait(2) -- Aumenta el tiempo de espera entre teletransportes
+    end
+end
+
+-- Creación de la pestaña en la interfaz gráfica
+local Tab = Window:MakeTab({
+    Name = "Farm",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+Tab:AddLabel("FARM")
+
+-- Dropdown para seleccionar el mob
+Tab:AddDropdown({
+    Name = "Select Mob",
+    Default = "...",
+    Options = {"Geere", "kaka", "Lii", "Sakuze", "Sackur", "Nabuto", "Minto"},
+    Callback = function(Value)
+        print("Selected Mob: " .. Value)
+        _G.selectedMob = Value  -- Guardamos el mob seleccionado
+
+        -- Comenzar a atacar al mob si el toggle está activado
+        if _G.farmSelectedMob and _G.selectedMob then
+            teleportAndAttackMobs()
+        end
+    end    
+})
+
+-- Toggle para habilitar el farm automático del mob seleccionado
+Tab:AddToggle({
+    Name = "FarmSelectedMob",
+    Default = false,
+    Callback = function(Value)
+        _G.farmSelectedMob = Value
+        print("FarmSelectedMob: " .. tostring(Value))
+
+        -- Comenzar o detener el ataque al mob seleccionado
+        if Value and _G.selectedMob then
+            teleportAndAttackMobs()
+        end
+    end    
+})
+
+-- Toggle para habilitar o deshabilitar el autoclick
+Tab:AddToggle({
+    Name = "AutoClick",
+    Default = false,
+    Callback = function(Value)
+        _G.autoclick = Value
+        print("AutoClick: " .. tostring(Value))
+
+        -- Comenzar o detener el autoclick
+        if Value then
+            autoClick()
+        end
+    end    
+})
+
+OrionLib:Init()
