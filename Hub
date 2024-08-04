@@ -237,7 +237,7 @@ end
 -- Crear las pestañas
 createTab("Farm", true)
 createTab("Ninja Village", false)
-createTab("Dragon Santuary", false)
+createTab("Dragon Sanctuary", false)
 
 -- Crear la pestaña Auto
 local autoTab = Window:MakeTab({
